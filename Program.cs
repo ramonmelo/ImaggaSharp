@@ -1,53 +1,36 @@
-﻿using RestSharp;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System;
 
 namespace PhotoTagger
 {
     class Program
     {
-        private const string MAIN_API = "https://api.imagga.com/v2/tags";
+        private const string API_KEY = "";
+        private const string API_SECRET = "";
 
-        private const string API_KEY = "***";
-        private const string API_SECRET = "***";
-
-        private static readonly Dictionary<string, string> PARAMS = new Dictionary<string, string>() {
-            { "verbose", "0" },
-            { "threshold", "30.0" },
-            { "language", "en,pt" }
-        };
+        private static ImaggaAPI api;
 
         static void Main(string[] args)
         {
             if (args.Length > 0)
             {
                 var path = args[0];
-                RequestTags(path);
+
+                api = new ImaggaAPI(API_KEY, API_SECRET);
+                var result = api.GetTagsFromFile(path, language: new string[] { "en" }, limit: 15, threshold: 40f);
+
+                if (result != null && result.status.IsSuccess)
+                {
+                    foreach (var item in result.result.tags)
+                    {
+                        Console.WriteLine(item.confidence);
+
+                        foreach (var itemTag in item.tag)
+                        {
+                            Console.WriteLine($"{itemTag.Key}: {itemTag.Value}");
+                        }
+                    }
+                }
             }
-        }
-
-        static void RequestTags(string filePath)
-        {
-            string basicAuthValue = Convert.ToBase64String(Encoding.UTF8.GetBytes(string.Format("{0}:{1}", API_KEY, API_SECRET)));
-
-            var client = new RestClient(MAIN_API)
-            {
-                Timeout = -1
-            };
-
-            var request = new RestRequest(Method.POST);
-
-            foreach (var item in PARAMS)
-            {
-                request.AddParameter(item.Key, item.Value);
-            }
-
-            request.AddFile("image", filePath);
-            request.AddHeader("Authorization", string.Format("Basic {0}", basicAuthValue));
-
-            IRestResponse response = client.Execute(request);
-            Console.WriteLine(response.Content);
         }
     }
 }
