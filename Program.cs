@@ -32,22 +32,24 @@ namespace PhotoTagger
 
             var tagCommand = new Command("tag")
             {
-                new Option<string>(
-                    new string[] { "--file", "-f" },
+                new Option<FileInfo>(
+                    "--file",
                     description: "Path to photo to be analyzed"),
             };
 
-            tagCommand.Handler = CommandHandler.Create<string>((path) =>
+            tagCommand.Handler = CommandHandler.Create<FileInfo>((file) =>
             {
-                if (string.IsNullOrEmpty(path) || File.Exists(path) == false)
+                if (file.Exists == false)
                 {
-                    Console.WriteLine($"Invalid Path: {path}");
+                    Console.WriteLine($"Invalid Path: {file.FullName}");
                     return;
                 }
 
+                Console.WriteLine($"Processing: {file.FullName}");
+
                 api = new ImaggaAPI(config_api_key, config_api_secret);
 
-                var result = api.GetTagsFromFile(path, language: new string[] { "en" }, limit: 15, threshold: 40f);
+                var result = api.GetTagsFromFile(file.FullName, language: new string[] { "en" }, limit: 15, threshold: 40f);
 
                 if (result != null && result.status.IsSuccess)
                 {
