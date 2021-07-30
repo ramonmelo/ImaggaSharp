@@ -1,21 +1,52 @@
 ﻿using System;
+using System.Configuration;
+using System.CommandLine;
+using System.CommandLine.Invocation;
+using System.IO;
 
 namespace PhotoTagger
 {
     class Program
     {
-        private const string API_KEY = "";
-        private const string API_SECRET = "";
-
         private static ImaggaAPI api;
 
-        static void Main(string[] args)
+        static int Main(string[] args)
         {
-            if (args.Length > 0)
-            {
-                var path = args[0];
+            string config_api_key = ConfigurationManager.AppSettings["api_key"];
+            string config_api_secret = ConfigurationManager.AppSettings["api_secret"];
 
-                api = new ImaggaAPI(API_KEY, API_SECRET);
+            if (string.IsNullOrEmpty(config_api_key))
+            {
+                Console.WriteLine("Invalid API Key");
+                return 0;
+            }
+
+            if (string.IsNullOrEmpty(config_api_secret))
+            {
+                Console.WriteLine("Invalid API Secret");
+                return 0;
+            }
+
+            // Create a root command with some options
+            var rootCommand = new RootCommand();
+
+            var tagCommand = new Command("tag")
+            {
+                new Option<string>(
+                    new string[] { "--file", "-f" },
+                    description: "Path to photo to be analyzed"),
+            };
+
+            tagCommand.Handler = CommandHandler.Create<string>((path) =>
+            {
+                if (string.IsNullOrEmpty(path) || File.Exists(path) == false)
+                {
+                    Console.WriteLine($"Invalid Path: {path}");
+                    return;
+                }
+
+                api = new ImaggaAPI(config_api_key, config_api_secret);
+
                 var result = api.GetTagsFromFile(path, language: new string[] { "en" }, limit: 15, threshold: 40f);
 
                 if (result != null && result.status.IsSuccess)
@@ -30,7 +61,13 @@ namespace PhotoTagger
                         }
                     }
                 }
-            }
+            });
+
+            rootCommand.Add(tagCommand);
+            rootCommand.Description = "Console Application to interface with the Imagga API";
+
+            // Parse the incoming args and invoke the handler
+            return rootCommand.InvokeAsync(args).Result;
         }
     }
 }
