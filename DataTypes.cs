@@ -4,6 +4,7 @@ using System.Text;
 
 namespace PhotoTagger
 {
+#pragma warning disable CS0649
     internal class Status
     {
         public string text;
@@ -22,7 +23,7 @@ namespace PhotoTagger
     {
         public float confidence;
         public Dictionary<string, string> tag;
-        
+
         public override string ToString()
         {
             return this.ToStringExtended();
@@ -49,4 +50,5 @@ namespace PhotoTagger
             return this.ToStringExtended();
         }
     }
+#pragma warning restore CS0649
 }
