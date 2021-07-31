@@ -3,6 +3,7 @@ using System.Configuration;
 using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.IO;
+using System.Text;
 
 namespace PhotoTagger
 {
@@ -33,15 +34,30 @@ namespace PhotoTagger
             var tagCommand = new Command("tag")
             {
                 new Option<FileInfo>(
-                    "--file",
+                    new string[] { "--file", "-f" },
                     description: "Path to photo to be analyzed"),
+                new Option<string[]>(
+                    new string[] { "--language", "-l" },
+                    getDefaultValue: () => new string[] { "en" },
+                    description: "Language of the Tags")
+                {
+                    Arity = ArgumentArity.OneOrMore
+                },
+                new Option<int>(
+                    "--limit",
+                    getDefaultValue: () => 20,
+                    description: "Max number of tags"),
+                new Option<int>(
+                    "--threshold",
+                    getDefaultValue: () => 30,
+                    description: "Threshold of confidence"),
             };
 
-            tagCommand.Handler = CommandHandler.Create<FileInfo>((file) =>
+            tagCommand.Handler = CommandHandler.Create<FileInfo, string[], int, int>((file, language, limit, threshold) =>
             {
-                if (file.Exists == false)
+                if (file == null || file.Exists == false)
                 {
-                    Console.WriteLine($"Invalid Path: {file.FullName}");
+                    Console.WriteLine($"Invalid Path: {file?.FullName}");
                     return;
                 }
 
@@ -49,26 +65,27 @@ namespace PhotoTagger
 
                 api = new ImaggaAPI(config_api_key, config_api_secret);
 
-                var result = api.GetTagsFromFile(file.FullName, language: new string[] { "en" }, limit: 15, threshold: 40f);
+                var result = api.GetTagsFromFile(file.FullName, language: language, limit: limit, threshold: threshold);
 
                 if (result != null && result.status.IsSuccess)
                 {
+                    var tagList = new StringBuilder();
+
                     foreach (var item in result.result.tags)
                     {
-                        Console.WriteLine(item.confidence);
-
                         foreach (var itemTag in item.tag)
                         {
-                            Console.WriteLine($"{itemTag.Key}: {itemTag.Value}");
+                            tagList.Append($"#{itemTag.Value.Replace(" ", "")} ");
                         }
                     }
+
+                    Console.WriteLine(tagList.ToString());
                 }
             });
 
             rootCommand.Add(tagCommand);
             rootCommand.Description = "Console Application to interface with the Imagga API";
 
-            // Parse the incoming args and invoke the handler
             return rootCommand.InvokeAsync(args).Result;
         }
     }
