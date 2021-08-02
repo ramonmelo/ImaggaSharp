@@ -35,7 +35,10 @@ namespace PhotoTagger
             {
                 new Option<FileInfo>(
                     new string[] { "--file", "-f" },
-                    description: "Path to photo to be analyzed"),
+                    description: "Path to photo to be analyzed")
+                {
+                    Arity = ArgumentArity.ExactlyOne
+                },
                 new Option<string[]>(
                     new string[] { "--language", "-l" },
                     getDefaultValue: () => new string[] { "en" },
@@ -46,18 +49,24 @@ namespace PhotoTagger
                 new Option<int>(
                     "--limit",
                     getDefaultValue: () => 20,
-                    description: "Max number of tags"),
+                    description: "Max number of tags")
+                {
+                    Arity = ArgumentArity.ZeroOrOne
+                },
                 new Option<int>(
                     "--threshold",
                     getDefaultValue: () => 30,
-                    description: "Threshold of confidence"),
+                    description: "Threshold of confidence")
+                {
+                    Arity = ArgumentArity.ZeroOrOne
+                },
             };
 
             tagCommand.Handler = CommandHandler.Create<FileInfo, string[], int, int>((file, language, limit, threshold) =>
             {
                 if (file == null || file.Exists == false)
                 {
-                    Console.WriteLine($"Invalid Path: {file?.FullName}");
+                    Console.WriteLine($"Invalid Path or file does not exist.");
                     return;
                 }
 
